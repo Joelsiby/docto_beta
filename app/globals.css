@@ -1,0 +1,376 @@
+@import "tailwindcss";
+
+
+/* ============================================
+   DOCTO — Clinical Glass Design System
+   Source: Google Stitch MedFlow Clinical Suite
+   Theme: Clinical Glass (Liquid Glass + Corporate Modern)
+   ============================================ */
+
+:root {
+  /* ── Primary (Medical Blue) ── */
+  --primary: #0050cb;
+  --primary-container: #0066ff;
+  --primary-fixed: #dae1ff;
+  --primary-fixed-dim: #b3c5ff;
+  --on-primary: #ffffff;
+  --on-primary-container: #f8f7ff;
+  --inverse-primary: #b3c5ff;
+
+  /* ── Secondary ── */
+  --secondary: #4a6078;
+  --secondary-container: #cbe2fe;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #4f657c;
+
+  /* ── Tertiary (Accent / CTA) ── */
+  --tertiary: #a33200;
+  --tertiary-container: #cc4204;
+  --on-tertiary: #ffffff;
+  --on-tertiary-container: #fff6f4;
+
+  /* ── Surfaces ── */
+  --surface: #f9f9fb;
+  --surface-dim: #d9dadc;
+  --surface-bright: #f9f9fb;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f3f5;
+  --surface-container: #eeeef0;
+  --surface-container-high: #e8e8ea;
+  --surface-container-highest: #e2e2e4;
+  --surface-glass: rgba(255, 255, 255, 0.7);
+  --surface-variant: #e2e2e4;
+  --surface-tint: #0054d6;
+
+  /* ── On Surface ── */
+  --on-surface: #1a1c1d;
+  --on-surface-variant: #424656;
+  --inverse-surface: #2f3132;
+  --inverse-on-surface: #f0f0f2;
+
+  /* ── Outline ── */
+  --outline: #727687;
+  --outline-variant: #c2c6d8;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+
+  /* ── Functional ── */
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
+  --on-error-container: #93000a;
+  --medical-success: #10B981;
+  --medical-alert: #EF4444;
+  --deep-navy: #192839;
+
+  /* ── Background ── */
+  --background: #f5f5f7;
+  --on-background: #1a1c1d;
+
+  /* ── Doctor Side (Dark) ── */
+  --doc-primary: #4F46E5;
+  --doc-primary-light: #818CF8;
+  --doc-primary-dark: #3730A3;
+  --doc-surface: #0F172A;
+  --doc-surface-elevated: #1E293B;
+  --doc-surface-overlay: #334155;
+  --doc-text-primary: #F8FAFC;
+  --doc-text-secondary: #94A3B8;
+  --doc-accent-green: #10B981;
+  --doc-accent-red: #EF4444;
+  --doc-accent-amber: #F59E0B;
+  --doc-accent-cyan: #06B6D4;
+
+  /* ── Patient Side (Light) ── */
+  --pat-primary: #0EA5E9;
+  --pat-primary-light: #38BDF8;
+  --pat-primary-dark: #0284C7;
+  --pat-surface: #FFFFFF;
+  --pat-surface-card: #F8FAFC;
+  --pat-surface-accent: #F0F9FF;
+  --pat-text-primary: #0F172A;
+  --pat-text-secondary: #64748B;
+  --pat-success: #10B981;
+  --pat-danger: #EF4444;
+  --pat-streak-gold: #F59E0B;
+  --pat-fun-purple: #A855F7;
+
+  /* ── Spacing ── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* ── Radius ── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --shadow-glass: 0 4px 20px rgba(0, 102, 255, 0.08);
+  --shadow-glow: 0 0 20px rgba(0, 102, 255, 0.15);
+
+  /* ── Glass Effect ── */
+  --glass-blur: 20px;
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ── Tailwind v4 Theme Inline ── */
+@theme inline {
+  /* Colors */
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-on-primary: var(--on-primary);
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+
+  --color-success: var(--medical-success);
+  --color-alert: var(--medical-alert);
+  --color-deep-navy: var(--deep-navy);
+
+  --color-background: var(--background);
+  --color-foreground: var(--on-surface);
+
+  /* Doctor palette */
+  --color-doc-primary: var(--doc-primary);
+  --color-doc-primary-light: var(--doc-primary-light);
+  --color-doc-surface: var(--doc-surface);
+  --color-doc-surface-elevated: var(--doc-surface-elevated);
+  --color-doc-text: var(--doc-text-primary);
+  --color-doc-text-secondary: var(--doc-text-secondary);
+  --color-doc-accent-green: var(--doc-accent-green);
+  --color-doc-accent-red: var(--doc-accent-red);
+  --color-doc-accent-amber: var(--doc-accent-amber);
+  --color-doc-accent-cyan: var(--doc-accent-cyan);
+
+  /* Patient palette */
+  --color-pat-primary: var(--pat-primary);
+  --color-pat-primary-light: var(--pat-primary-light);
+  --color-pat-surface: var(--pat-surface);
+  --color-pat-surface-card: var(--pat-surface-card);
+  --color-pat-surface-accent: var(--pat-surface-accent);
+  --color-pat-text: var(--pat-text-primary);
+  --color-pat-text-secondary: var(--pat-text-secondary);
+  --color-pat-success: var(--pat-success);
+  --color-pat-danger: var(--pat-danger);
+  --color-pat-streak-gold: var(--pat-streak-gold);
+  --color-pat-fun-purple: var(--pat-fun-purple);
+
+  /* Fonts */
+  --font-headline: var(--font-hanken-grotesk);
+  --font-body: var(--font-inter);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* ── Base Styles ── */
+body {
+  background: var(--background);
+  color: var(--on-surface);
+  font-family: var(--font-body), 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Glass Card Utility ── */
+.glass-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass), var(--glass-inner-glow);
+  border-radius: var(--radius-lg);
+}
+
+.glass-card:hover {
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-lg), var(--glass-inner-glow);
+  transform: translateY(-1px);
+  transition: all 200ms ease;
+}
+
+/* ── Elevation Levels (from Stitch design system) ── */
+.elevation-0 {
+  background: var(--background);
+}
+
+.elevation-1 {
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--border-subtle);
+}
+
+.elevation-2 {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.elevation-3 {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ── Typography Presets ── */
+.text-display-lg {
+  font-family: var(--font-headline), 'Hanken Grotesk', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+}
+
+.text-headline-lg {
+  font-family: var(--font-headline), 'Hanken Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 40px;
+  letter-spacing: -0.01em;
+}
+
+.text-headline-md {
+  font-family: var(--font-headline), 'Hanken Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.text-body-lg {
+  font-family: var(--font-body), 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+.text-body-md {
+  font-family: var(--font-body), 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.text-body-sm {
+  font-family: var(--font-body), 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.text-label-md {
+  font-family: var(--font-body), 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ── Scrollbar Styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--outline-variant);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--outline);
+}
+
+/* ── Recording Pulse Animation ── */
+@keyframes pulse-recording {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-recording {
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+/* ── Streak Fire Animation ── */
+@keyframes bounce-fire {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-streak-fire {
+  animation: bounce-fire 0.5s ease-in-out;
+}
+
+/* ── Smooth Page Transitions ── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 300ms ease-out;
+}
+
+/* ── Skeleton Shimmer ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-container) 25%,
+    var(--surface-container-high) 50%,
+    var(--surface-container) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
