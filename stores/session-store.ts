@@ -194,6 +194,7 @@ export const useSessionStore = create<SessionState>()(
     set({
       sessionId: null,
       sessionToken: null,
+      currentPatientId: null,
       sessionStatus: 'idle',
       isRecording: false,
       recordingDuration: 0,

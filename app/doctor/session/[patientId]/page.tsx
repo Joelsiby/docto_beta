@@ -70,9 +70,29 @@ export default function ClinicalSessionPage() {
 
   const [patientData, setPatientData] = React.useState<any>(null)
   const [loadingPatient, setLoadingPatient] = React.useState(true)
+  const [ready, setReady] = React.useState(false)
+  const initialPatientRef = React.useRef(patientId)
+
+  // ── Prevent Data Leaking Between Patients ──────────────────────────────────
+  // Must run BEFORE fetching patient data or rendering any session UI.
+  // If the persisted store has data from a different patient, clear it
+  // immediately so the user never sees stale data.
+  React.useEffect(() => {
+    if (!hasHydrated) return
+    initialPatientRef.current = patientId
+
+    if (currentPatientId !== null && currentPatientId !== patientId) {
+      clearSession()
+      setCurrentPatientId(patientId)
+    } else if (currentPatientId === null) {
+      setCurrentPatientId(patientId)
+    }
+    setReady(true)
+  }, [patientId, currentPatientId, clearSession, setCurrentPatientId, hasHydrated])
 
   // ── Fetch Patient Data ─────────────────────────────────────────────────────
   React.useEffect(() => {
+    if (!ready) return
     async function fetchPatient() {
       setLoadingPatient(true)
       const supabase = createClient()
@@ -90,19 +110,7 @@ export default function ClinicalSessionPage() {
       setLoadingPatient(false)
     }
     if (patientId) fetchPatient()
-  }, [patientId])
-
-  // ── Prevent Data Leaking Between Patients ──────────────────────────────────
-  // Guard with hasHydrated so we don't wipe restored state before localStorage
-  // has had a chance to rehydrate the store after a page refresh.
-  React.useEffect(() => {
-    if (!hasHydrated) return
-
-    if (currentPatientId !== patientId) {
-      clearSession()
-      setCurrentPatientId(patientId)
-    }
-  }, [patientId, currentPatientId, clearSession, setCurrentPatientId, hasHydrated])
+  }, [patientId, ready])
 
   const [showConfirmModal, setShowConfirmModal] = React.useState(false)
   const [prescriptionId, setPrescriptionId] = React.useState<string | null>(null)
@@ -327,6 +335,18 @@ export default function ClinicalSessionPage() {
 
   const statusBadge = STATUS_BADGE[sessionStatus] || STATUS_BADGE.idle
   const isProcessing = sessionStatus === 'processing' || isExtracting
+
+  // Don't render session UI until the store is cleared for this patient
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F5F7]">
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-[#0050cb]/20 border-t-[#0050cb] rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-[#8E8E93]">Preparing session...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-5 bg-[#F5F5F7] h-screen p-6 overflow-hidden">

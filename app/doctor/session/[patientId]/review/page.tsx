@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PrescriptionTable } from '@/components/doctor/prescription-table'
 import { useSessionStore } from '@/stores/session-store'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SessionReviewPage() {
@@ -23,14 +23,31 @@ export default function SessionReviewPage() {
     issues, 
     referrals, 
     prescriptions,
-    clearSession 
+    currentPatientId,
+    hasHydrated,
+    clearSession,
+    setCurrentPatientId,
   } = useSessionStore()
 
   const [patientName, setPatientName] = useState('Rahul Kumar')
   const [doctorId, setDoctorId] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  // ── Guard: clear old session data if this is a different patient ──────────
+  useEffect(() => {
+    if (!hasHydrated) return
+    if (currentPatientId !== null && currentPatientId !== patientId) {
+      clearSession()
+      setCurrentPatientId(patientId)
+    } else if (currentPatientId === null) {
+      setCurrentPatientId(patientId)
+    }
+    setReady(true)
+  }, [patientId, currentPatientId, clearSession, setCurrentPatientId, hasHydrated])
 
   useEffect(() => {
+    if (!ready) return
     // Get patient details
     supabase.from('patient_profiles')
       .select('full_name')
@@ -52,7 +69,7 @@ export default function SessionReviewPage() {
           })
       }
     })
-  }, [patientId])
+  }, [patientId, ready])
 
   const handleSendToPatient = async () => {
     if (!doctorId) {
@@ -148,6 +165,14 @@ export default function SessionReviewPage() {
     } finally {
       setIsSending(false)
     }
+  }
+
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#F5F5F7]">
+        <div className="w-8 h-8 border-3 border-[#0050cb]/20 border-t-[#0050cb] rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (

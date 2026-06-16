@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   ArrowLeft, Stethoscope, Calendar, Pill, FileText,
   Sparkles, User, AlertCircle, CheckCircle2, ExternalLink,
-  ChevronRight, Heart, Info, Activity
+  ChevronRight, Heart, Info, Activity, FileDown
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -413,14 +413,24 @@ export default function ConsultationDetailPage() {
                 </div>
               ))}
 
-              <Link
-                href="/patient/medications"
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0050cb] text-white text-sm font-semibold hover:bg-[#003d9e] transition-colors shadow-lg shadow-blue-500/20"
-              >
-                <Pill className="h-4 w-4" />
-                View Medication Tracker
-                <ChevronRight className="h-4 w-4" />
-              </Link>
+              <div className="flex gap-3">
+                <a
+                  href={`/api/session/prescription-pdf?sessionId=${sessionId}`}
+                  download
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white border-2 border-[#0050cb] text-[#0050cb] text-sm font-semibold hover:bg-blue-50 transition-colors"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Download Prescription
+                </a>
+                <Link
+                  href="/patient/medications"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0050cb] text-white text-sm font-semibold hover:bg-[#003d9e] transition-colors shadow-lg shadow-blue-500/20"
+                >
+                  <Pill className="h-4 w-4" />
+                  Medication Tracker
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
             </>
           )}
         </div>
