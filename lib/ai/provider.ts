@@ -125,7 +125,7 @@ export async function generateText(
   
   if (provider === "nvidia") {
     const client = getNvidiaClient()
-    const modelName = process.env.NVIDIA_MODEL || "google/gemma-2-9b-it"
+    const modelName = process.env.NVIDIA_MODEL || "meta/llama-3.3-70b-instruct"
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = []
 

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import {
   ChevronLeft, ChevronRight, Pill, Clock,
-  CheckCircle2, Circle, Sun, Sunset, Moon, Coffee
+  CheckCircle2, Circle, Sun, Sunset, Moon, Coffee,
+  Calendar
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -165,60 +166,79 @@ export function MedicationCalendar({ patientId, view }: Props) {
     const selectedDayMeds = scheduleMap[selectedDay] || []
 
     return (
-      <div className="space-y-4">
-        {/* Week Navigation */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-              <ChevronLeft className="h-4 w-4 text-gray-500" />
-            </button>
-            <p className="text-sm font-semibold text-gray-700">{headerLabel}</p>
-            <button onClick={() => navigate(1)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-              <ChevronRight className="h-4 w-4 text-gray-500" />
-            </button>
-          </div>
+      <div className="space-y-8">
+        {/* Day strip container */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm overflow-x-auto">
+          <div className="flex min-w-[500px] justify-between">
 
-          {/* Day strip */}
-          <div className="grid grid-cols-7 gap-1">
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-              <div key={i} className="text-center text-[10px] text-gray-400 font-semibold pb-1">{d}</div>
-            ))}
             {days.map((day) => {
               const key = formatDateKey(day)
               const meds = scheduleMap[key] || []
               const takenCount = meds.filter(m => m.status === 'taken').length
               const total = meds.length
-              const hasFlag = meds.some(m => m.status === 'missed')
+              const isSelectedDay = isSelected(day)
+              
+              // Normalize today logic for date boundary comparison
+              const todayStr = formatDateKey(new Date())
+              const isFuture = key > todayStr
+
+              let progressColor = 'stroke-blue-500'
+              let bgColor = 'bg-blue-50'
+              
+              if (total > 0 && takenCount === total) {
+                progressColor = 'stroke-emerald-400'
+                bgColor = 'bg-emerald-50'
+              }
+
+              const progress = total > 0 ? (takenCount / total) * 100 : 0
 
               return (
                 <button
                   key={key}
                   onClick={() => setSelectedDay(key)}
-                  className={`flex flex-col items-center py-2 px-1 rounded-xl transition-all ${
-                    isSelected(day)
-                      ? 'bg-[#0050cb] text-white shadow-md shadow-blue-500/30'
-                      : isToday(day)
-                        ? 'bg-blue-50 text-[#0050cb] border border-blue-200'
-                        : 'hover:bg-gray-50 text-gray-700'
+                  className={`flex flex-col items-center py-4 px-2 w-[14%] rounded-2xl transition-all ${
+                    isSelectedDay
+                      ? 'bg-blue-50/50 border border-blue-200 shadow-sm'
+                      : 'hover:bg-gray-50 border border-transparent text-gray-700'
                   }`}
                 >
-                  <span className="text-sm font-bold">{day.getDate()}</span>
-                  {total > 0 && (
-                    <div className="flex gap-0.5 mt-1">
-                      {Array.from({ length: Math.min(total, 3) }, (_, i) => (
-                        <div
-                          key={i}
-                          className={`w-1 h-1 rounded-full ${
-                            i < takenCount
-                              ? isSelected(day) ? 'bg-emerald-300' : 'bg-emerald-500'
-                              : hasFlag
-                              ? isSelected(day) ? 'bg-red-300' : 'bg-red-400'
-                              : isSelected(day) ? 'bg-blue-200' : 'bg-blue-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <span className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${isSelectedDay ? 'text-gray-900' : 'text-gray-400'}`}>
+                    {day.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </span>
+                  <span className={`text-xl font-bold mb-4 ${isSelectedDay ? 'text-gray-900' : 'text-gray-700'}`}>
+                    {day.getDate()}
+                  </span>
+
+                  {/* Ring / Icon */}
+                  <div className="relative w-12 h-12 flex items-center justify-center mb-2">
+                    {isFuture ? (
+                      <div className="w-10 h-10 rounded-full border-[3px] border-gray-200 flex items-center justify-center bg-gray-50">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-gray-400" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                      </div>
+                    ) : total > 0 && takenCount === total ? (
+                      <div className="w-10 h-10 rounded-full border-[3px] border-emerald-400 flex items-center justify-center bg-emerald-50 text-emerald-500">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                    ) : (
+                      <>
+                        <svg className="w-12 h-12 -rotate-90 absolute inset-0" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="16" fill="none" className="stroke-gray-100" strokeWidth="3" />
+                          <circle 
+                            cx="18" cy="18" r="16" fill="none" 
+                            className={progressColor} 
+                            strokeWidth="3"
+                            strokeDasharray={`${progress * 1.005} 100.5`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="text-lg font-bold text-[#0050cb] z-10">{takenCount}</span>
+                      </>
+                    )}
+                  </div>
+
+                  <span className={`text-[10px] font-bold ${isSelectedDay ? 'text-[#0050cb]' : 'text-gray-400'}`}>
+                    {isSelectedDay && total > 0 ? `${takenCount}/${total} Tasks` : `${takenCount}/${total}`}
+                  </span>
                 </button>
               )
             })}
@@ -226,69 +246,104 @@ export function MedicationCalendar({ patientId, view }: Props) {
         </div>
 
         {/* Selected Day Schedule */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">
-            {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </h3>
-
+        <div className="space-y-10 pl-2">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="w-6 h-6 border-2 border-[#0050cb]/20 border-t-[#0050cb] rounded-full animate-spin" />
             </div>
-          ) : selectedDayMeds.length === 0 ? (
-            <div className="text-center py-10 bg-gray-50 rounded-2xl border border-gray-100">
-              <Pill className="h-6 w-6 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No medications scheduled for this day</p>
-            </div>
           ) : (
             Object.entries(TIME_OF_DAY_CONFIG).map(([slot, config]) => {
               const slotMeds = selectedDayMeds.filter(m => m.time_of_day === slot)
-              if (slotMeds.length === 0) return null
+              // If there are no meds and it's not a primary slot, skip. But show empty state for evening/night etc if needed.
+              // To match design exactly, we show primary slots even if empty.
+              if (slot === 'as_needed' && slotMeds.length === 0) return null
+              
               const Icon = config.icon
 
               return (
-                <div key={slot} className={`rounded-2xl border p-4 ${config.bg} ${config.border}`}>
-                  <div className={`flex items-center gap-2 mb-3 ${config.color}`}>
-                    <Icon className="h-4 w-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">{config.label}</span>
+                <div key={slot} className="relative">
+                  {/* Section Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shadow-sm border border-gray-200">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 capitalize tracking-tight">{slot.replace('_', ' ')}</h3>
+                    <div className="flex-1 h-px bg-gray-200 ml-2" />
                   </div>
-                  <div className="space-y-2">
-                    {slotMeds.map((med) => (
-                      <div key={med.id} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-white/80 shadow-sm">
-                        <button
-                          onClick={() => markStatus(med.id, med.status === 'taken' ? 'pending' : 'taken')}
-                          disabled={updatingId === med.id}
-                          className="flex-shrink-0 transition-all hover:scale-110"
-                        >
-                          {med.status === 'taken' ? (
-                            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                          ) : (
-                            <Circle className="h-6 w-6 text-gray-300" />
-                          )}
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-sm ${med.status === 'taken' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                            {med.medication_name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {med.dosage && (
-                              <span className="text-[10px] font-mono text-gray-500">{med.dosage}</span>
-                            )}
-                            {med.scheduled_time && (
-                              <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
-                                <Clock className="h-2.5 w-2.5" /> {med.scheduled_time}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {med.status === 'taken' && (
-                          <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex-shrink-0">
-                            Done ✓
-                          </span>
-                        )}
+
+                  {slotMeds.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed ml-2">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mx-auto mb-3">
+                        <Calendar className="h-5 w-5 text-gray-400" />
                       </div>
-                    ))}
-                  </div>
+                      <p className="text-sm font-bold text-gray-900">No medications scheduled</p>
+                      <p className="text-xs text-gray-500 mt-1">You're all clear for this {slot}. Enjoy your rest!</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {slotMeds.map((med) => {
+                        const isTaken = med.status === 'taken'
+                        const isFuture = formatDateKey(new Date()) < selectedDay
+
+                        let cardBorder = 'border-l-4 border-l-blue-500 border-gray-200 bg-blue-50/20'
+                        let iconBg = 'bg-blue-100 text-[#0050cb]'
+                        
+                        if (isTaken) {
+                          cardBorder = 'border-l-4 border-l-emerald-500 border-gray-100 bg-white'
+                          iconBg = 'bg-emerald-100 text-emerald-600'
+                        } else if (isFuture) {
+                          cardBorder = 'border-l-4 border-l-gray-300 border-gray-100 bg-gray-50/50'
+                          iconBg = 'bg-gray-200 text-gray-500'
+                        }
+
+                        return (
+                          <div key={med.id} className={`flex items-center justify-between gap-4 rounded-xl p-4 border shadow-sm transition-all ${cardBorder}`}>
+                            
+                            <div className="flex items-center gap-4">
+                              {/* Left Icon */}
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+                                {isTaken ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M19 5L9 15L5 11" strokeLinecap="round" strokeLinejoin="round"/></svg> : <Pill className="h-5 w-5" />}
+                              </div>
+                              
+                              {/* Content */}
+                              <div>
+                                <p className={`font-bold text-base ${isTaken ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                                  {med.medication_name}
+                                </p>
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5 font-medium">
+                                  {med.dosage && <span>{med.dosage}</span>}
+                                  {med.dosage && med.instructions && <span>•</span>}
+                                  {med.instructions && <span>{med.instructions}</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right Actions */}
+                            <div className="flex items-center gap-3">
+                              {isTaken && (
+                                <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Reward
+                                </span>
+                              )}
+                              
+                              <button
+                                onClick={() => markStatus(med.id, med.status === 'taken' ? 'pending' : 'taken')}
+                                disabled={updatingId === med.id}
+                                className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                  isTaken 
+                                    ? 'bg-emerald-500 border-emerald-500 text-white' 
+                                    : 'border-gray-400 bg-white text-transparent hover:border-[#0050cb]'
+                                }`}
+                              >
+                                <svg viewBox="0 0 14 14" fill="none" className="w-4 h-4"><path d="M3 8L6 11L11 3.5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" stroke="currentColor"/></svg>
+                              </button>
+                            </div>
+                            
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             })

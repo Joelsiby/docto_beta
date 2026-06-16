@@ -61,6 +61,10 @@ export interface AiPromptMessage {
 // ─── State Interface ──────────────────────────────────────────────────────────
 
 export interface SessionState {
+  /** True once Zustand has finished rehydrating from localStorage */
+  hasHydrated: boolean
+  setHasHydrated: (v: boolean) => void
+
   /** Supabase session row ID — never exposed in URL */
   sessionId: string | null
   /** Opaque token used in URL — maps to sessionId server-side */
@@ -126,6 +130,9 @@ export interface SessionState {
 export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
+  hasHydrated: false,
+  setHasHydrated: (v) => set({ hasHydrated: v }),
+
   sessionId: null,
   sessionToken: null,
   currentPatientId: null,
@@ -223,6 +230,9 @@ export const useSessionStore = create<SessionState>()(
   }),
   {
     name: 'docto-session-storage', // saves to localStorage by default
+    onRehydrateStorage: () => (state) => {
+      if (state) state.setHasHydrated(true)
+    },
     partialize: (state) => ({
       // Only persist data that should survive a refresh
       sessionId: state.sessionId,

@@ -65,6 +65,7 @@ export default function ClinicalSessionPage() {
     aiPromptMessage,
     currentPatientId,
     setCurrentPatientId,
+    hasHydrated,
   } = useSessionStore()
 
   const [patientData, setPatientData] = React.useState<any>(null)
@@ -92,12 +93,16 @@ export default function ClinicalSessionPage() {
   }, [patientId])
 
   // ── Prevent Data Leaking Between Patients ──────────────────────────────────
+  // Guard with hasHydrated so we don't wipe restored state before localStorage
+  // has had a chance to rehydrate the store after a page refresh.
   React.useEffect(() => {
+    if (!hasHydrated) return
+
     if (currentPatientId !== patientId) {
       clearSession()
       setCurrentPatientId(patientId)
     }
-  }, [patientId, currentPatientId, clearSession, setCurrentPatientId])
+  }, [patientId, currentPatientId, clearSession, setCurrentPatientId, hasHydrated])
 
   const [showConfirmModal, setShowConfirmModal] = React.useState(false)
   const [prescriptionId, setPrescriptionId] = React.useState<string | null>(null)
@@ -192,14 +197,36 @@ export default function ClinicalSessionPage() {
   // ── Save to Supabase ───────────────────────────────────────────────────────
 
   const saveSessionToSupabase = async (extractedData: any) => {
-    if (!sessionId) return
+    let currentSessionId = sessionId
 
     try {
+      if (!currentSessionId) {
+        // Create session if it doesn't exist
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user) throw new Error("No authenticated user found")
+
+        const startRes = await fetch('/api/session/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ patientId, doctorId: user.id }),
+        })
+        const startData = await startRes.json()
+        
+        if (startData.sessionId) {
+          currentSessionId = startData.sessionId
+          setSessionId(currentSessionId as string)
+        } else {
+          throw new Error("Failed to create session")
+        }
+      }
+
       const res = await fetch('/api/session/end', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId,
+          sessionId: currentSessionId,
           transcript,
           summary: extractedData.summary,
           patientSummary: extractedData.patient_summary,
@@ -225,7 +252,7 @@ export default function ClinicalSessionPage() {
     await fetch('/api/session/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, prescriptionId }),
+      body: JSON.stringify({ sessionId, prescriptionId, patientId }),
     })
     setSessionStatus('submitted')
     setShowConfirmModal(false)

@@ -76,18 +76,27 @@ export async function POST(req: Request) {
         prescriptionId = prescription.id
 
         // Step 3: Insert prescription items
-        const items = prescriptions.map((rx: any, index: number) => ({
-          prescription_id: prescriptionId,
-          medicine_name: rx.name,
-          dosage: rx.dosage,
-          when_to_take: rx.when_to_take || rx.whenToTake,
-          timing: rx.timing,
-          meal_relation: rx.meal_relation || rx.mealRelation,
-          duration_days: rx.duration_days || rx.durationDays,
-          notes: rx.notes,
-          actions: rx.actions,
-          sort_order: index,
-        }))
+        const items = prescriptions.map((rx: any, index: number) => {
+          const whenToTake: string[] = rx.when_to_take || rx.whenToTake || ['as directed']
+          // Derive a human-readable frequency string for legacy compatibility
+          const frequencyStr = whenToTake
+            .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' '))
+            .join(' + ')
+          return {
+            prescription_id: prescriptionId,
+            medicine_name: rx.name,
+            medication_name: rx.name,
+            frequency: frequencyStr,
+            dosage: rx.dosage || null,
+            when_to_take: whenToTake,
+            timing: rx.timing || null,
+            meal_relation: rx.meal_relation || rx.mealRelation || 'any',
+            duration_days: rx.duration_days || rx.durationDays || 7,
+            notes: rx.notes || null,
+            actions: rx.actions || null,
+            sort_order: index,
+          }
+        })
 
         const { error: itemsError } = await (supabase as any)
           .from('prescription_items')

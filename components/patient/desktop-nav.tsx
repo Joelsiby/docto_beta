@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV_ITEMS = [
   { href: '/patient/dashboard',      icon: 'home',            label: 'Home' },
@@ -16,9 +18,31 @@ const NAV_ITEMS = [
 
 export default function PatientDesktopNav() {
   const pathname = usePathname()
+  const supabase = createClient()
+  const [userName, setUserName] = useState('')
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data }: { data: any } = await supabase
+        .from('patient_profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (data?.full_name) {
+        setUserName(data.full_name)
+      }
+    }
+    fetchUserName()
+  }, [])
+
+  const profileLabel = userName
+    ? `${userName.split(' ')[0]}'s Profile`
+    : 'My Profile'
 
   return (
-    <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 border-r border-gray-100 bg-white/80 backdrop-blur-md sticky top-[60px] h-[calc(100vh-60px)] overflow-y-auto py-6 px-3">
+    <aside className="hidden lg:flex flex-col w-60 flex-shrink-0 border-r border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 h-screen overflow-y-auto py-6 px-3">
       {/* Logo mark */}
       <div className="px-3 mb-6">
         <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Patient Portal</p>
@@ -65,7 +89,7 @@ export default function PatientDesktopNav() {
           )}
         >
           <span className="material-symbols-outlined text-[20px]">person</span>
-          <span>My Profile</span>
+          <span>{profileLabel}</span>
         </Link>
       </div>
     </aside>

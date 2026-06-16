@@ -88,7 +88,14 @@ export default function ConsultationDetailPage() {
         .select('*')
         .eq('prescription_id', rxData.id)
 
-      if (items) setPrescriptions(items)
+      if (items) {
+        setPrescriptions(
+          items.map((item: any) => ({
+            ...item,
+            name: item.medicine_name || item.medication_name || '',
+          }))
+        )
+      }
     }
 
     setIsLoading(false)

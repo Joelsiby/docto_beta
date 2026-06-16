@@ -20,6 +20,7 @@ export function TranscriptViewer() {
     lifestyleSuggestions,
     seedDemoTranscript,
     isExtracting,
+    setSessionStatus,
   } = useSessionStore()
 
   const hasSummary = summary || issues.length > 0 || diagnosis.length > 0

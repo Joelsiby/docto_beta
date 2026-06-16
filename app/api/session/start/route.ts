@@ -20,17 +20,29 @@ export async function POST(req: Request) {
 
     const supabase = await createClient()
 
+    // ── Resolve doctor_profiles.id from auth user.id ──────────────────────────
+    // The FK on sessions.doctor_id references doctor_profiles.id, not auth.users.id
+    let doctorProfileId = doctorId
+    const { data: doctorProfile } = await (supabase as any)
+      .from('doctor_profiles')
+      .select('id')
+      .eq('user_id', doctorId)
+      .maybeSingle()
+
+    if (doctorProfile?.id) {
+      doctorProfileId = doctorProfile.id
+    }
+
     // Generate opaque session token — safe for URL, no PII
     const sessionToken = randomBytes(16).toString('hex')
 
     const { data: session, error } = await (supabase as any)
       .from('sessions')
       .insert({
-        doctor_id: doctorId,
+        doctor_id: doctorProfileId,
         patient_id: patientId,
         appointment_id: appointmentId || null,
         session_token: sessionToken,
-        started_at: new Date().toISOString(),
         status: 'active',
       })
       .select('id, session_token')
@@ -38,13 +50,10 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error('Supabase session create error:', error)
-      // Return mock session for development if DB not ready
-      return NextResponse.json({
-        success: true,
-        sessionId: `dev-${Date.now()}`,
-        sessionToken,
-        dev_mode: true,
-      })
+      return NextResponse.json(
+        { error: 'Failed to create session', details: error.message },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({

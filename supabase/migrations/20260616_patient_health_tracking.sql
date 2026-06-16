@@ -69,5 +69,22 @@ ALTER TABLE medication_schedule ADD COLUMN IF NOT EXISTS time_of_day TEXT DEFAUL
 -- ── 5. Sessions table: ensure patient_summary column exists ─────────────────
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS patient_summary TEXT;
 
+-- ── 6. Create Storage Bucket for Documents ──────────────────────────────────
+-- Creates the 'documents' bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('documents', 'documents', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage RLS Policies (Allow authenticated users to upload & read)
+-- Note: These policies assume standard authenticated access
+CREATE POLICY "Allow public read access to documents"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'documents');
+
+CREATE POLICY "Allow authenticated uploads to documents"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'documents');
+
 -- ── Done ─────────────────────────────────────────────────────────────────────
 -- Run this in Supabase SQL Editor and confirm: "Success. No rows returned."

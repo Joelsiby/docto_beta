@@ -4,9 +4,9 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
-  Activity, Calendar, Clock, Flame, FileText, 
+  Activity, Calendar, Clock, FileText, 
   MessageSquare, ArrowRight, CheckCircle2, Sparkles,
-  ArrowUpRight, ShieldAlert, Pill, Upload
+  ArrowUpRight, ShieldAlert, Pill
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -161,19 +161,7 @@ export default function PatientDashboard() {
           </p>
         </div>
         
-        {/* Streak Counter */}
-        <div className="flex items-center gap-4 bg-white border border-orange-100 p-4 rounded-2xl self-start md:self-auto shadow-sm shadow-orange-500/5">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-inner">
-            <Flame className="h-6 w-6 text-white animate-bounce" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-black text-gray-900">{data.streak} Days</span>
-              <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold tracking-wider uppercase">Active</span>
-            </div>
-            <p className="text-xs text-gray-500 font-medium">Earn 10% off next booking!</p>
-          </div>
-        </div>
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -298,11 +286,7 @@ export default function PatientDashboard() {
               Upload blood reports or diagnostic tests to view AI insights instantly
             </p>
 
-            <Link href="/patient/reports" className="block border-2 border-dashed border-gray-200 rounded-2xl p-5 text-center bg-gray-50 hover:border-[#0050cb]/40 hover:bg-blue-50/50 transition-all mb-6 group">
-              <Upload className="h-6 w-6 text-gray-400 group-hover:text-[#0050cb] mx-auto mb-2 transition-colors" />
-              <span className="text-sm font-bold text-gray-700 group-hover:text-[#0050cb] block mb-1">Upload New Report</span>
-              <span className="text-xs text-gray-500 block">Supports PDF, PNG, JPEG</span>
-            </Link>
+
 
             <div className="space-y-3">
               {data.healthReports.map((report) => (
@@ -326,19 +310,7 @@ export default function PatientDashboard() {
               ))}
             </div>
 
-            {/* Export Hub Link */}
-            <Link href="/patient/records" className="mt-6 flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl transition-colors group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white text-gray-600 flex items-center justify-center shadow-sm">
-                  <span className="material-symbols-outlined text-[20px]">folder_managed</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-gray-900">Health Records & Export</h3>
-                  <p className="text-xs text-gray-500">Download PDF, CSV, or FHIR</p>
-                </div>
-              </div>
-              <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
-            </Link>
+
 
           </div>
 

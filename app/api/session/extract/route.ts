@@ -59,53 +59,8 @@ export async function POST(req: Request) {
         CLINICAL_EXTRACTION_SYSTEM_PROMPT
       )
     } catch (aiError) {
-      console.warn("AI extraction failed, using robust fallback mock data:", aiError)
-      extracted = {
-        summary: "Patient presented with a 5-day history of dry cough and mild fever. Examination showed clear lungs but a red throat. Diagnosed with acute viral bronchitis.",
-        patient_summary: "You have a viral chest infection (acute bronchitis). It doesn't need antibiotics. Take the prescribed medicines for fever and cough, get plenty of rest, and avoid cold food. Come back if your fever lasts more than 4 days.",
-        issues: ["Dry cough for 5 days", "Mild fever", "Chest feels tight and sore"],
-        diagnosis: [{ condition: "Acute Bronchitis (Viral)", icd10: "J20.9", confidence: "high" }],
-        referrals: ["Chest X-ray"],
-        lifestyle_suggestions: [{ category: "Diet", suggestion: "Avoid cold drinks, ice cream, and cold food for a week" }],
-        prescriptions: [
-          {
-            id: "rx_mock_1",
-            name: "Paracetamol 650mg",
-            dosage: "1 tablet",
-            when_to_take: ["morning", "night"],
-            timing: ["08:00", "20:00"],
-            meal_relation: "after_meals",
-            duration_days: 3,
-            notes: "For fever",
-            actions: "Review if fever persists > 4 days",
-            confidence: "high"
-          },
-          {
-            id: "rx_mock_2",
-            name: "Levolin Syrup",
-            dosage: "5ml",
-            when_to_take: ["morning", "afternoon", "night"],
-            timing: [],
-            meal_relation: "after_meals",
-            duration_days: 5,
-            notes: "For cough",
-            actions: "",
-            confidence: "high"
-          },
-          {
-            id: "rx_mock_3",
-            name: "Cetirizine 10mg",
-            dosage: "1 tablet",
-            when_to_take: ["night"],
-            timing: [],
-            meal_relation: "any",
-            duration_days: 5,
-            notes: "For allergy",
-            actions: "",
-            confidence: "high"
-          }
-        ]
-      }
+      console.error("AI extraction failed:", aiError)
+      throw new Error("Failed to extract data from the transcript. Please try again or enter details manually.")
     }
 
     // Step 2: Post-process — validate and normalize prescriptions
@@ -115,7 +70,7 @@ export async function POST(req: Request) {
     const prescriptionsWithWarnings = await checkDrugInteractions(normalizedPrescriptions)
 
     // Step 4: Generate a natural-language prompt for the doctor
-    const aiPromptText = await generateAiDoctorPrompt({
+    const aiPromptText = generateAiDoctorPrompt({
       symptomsCount: (extracted.issues || []).length,
       prescriptionsCount: normalizedPrescriptions.length,
       diagnosesCount: (extracted.diagnosis || []).length,
@@ -173,31 +128,13 @@ function normalizePrescriptions(
   }))
 }
 
-/**
- * Generate a friendly doctor-facing summary message after extraction.
- */
-async function generateAiDoctorPrompt(counts: {
+function generateAiDoctorPrompt(counts: {
   symptomsCount: number
   prescriptionsCount: number
   diagnosesCount: number
   referralsCount: number
-}): Promise<string> {
+}): string {
   const { symptomsCount, prescriptionsCount, diagnosesCount, referralsCount } = counts
 
-  const context = `
-    Extracted data summary:
-    - ${symptomsCount} symptom(s)/issue(s)
-    - ${diagnosesCount} diagnosis/diagnoses
-    - ${prescriptionsCount} prescription(s)
-    - ${referralsCount} referral(s)/test(s)
-    
-    Generate a brief, natural confirmation message for the doctor.
-  `
-
-  try {
-    return await generateJSON<string>(context, AI_DOCTOR_PROMPT_SYSTEM)
-  } catch {
-    // Fallback message if AI prompt generation fails
-    return `I've extracted ${symptomsCount} symptom(s), ${diagnosesCount} diagnosis, and ${prescriptionsCount} prescription(s)${referralsCount > 0 ? `, along with ${referralsCount} referral(s)` : ''}. Does this look complete?`
-  }
+  return `I've extracted ${symptomsCount} symptom(s), ${diagnosesCount} diagnosis, and ${prescriptionsCount} prescription(s)${referralsCount > 0 ? `, along with ${referralsCount} referral(s)` : ''}. Does this look complete?`
 }

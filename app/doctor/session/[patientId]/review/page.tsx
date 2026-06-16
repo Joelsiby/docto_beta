@@ -99,14 +99,24 @@ export default function SessionReviewPage() {
         if (rxError) throw rxError
 
         // 3. Create prescription items
-        const itemsToInsert = prescriptions.map((p: any) => ({
-          prescription_id: rxData.id,
-          medication_name: p.name,
-          dosage: p.dosage,
-          frequency: p.frequency,
-          duration: p.duration,
-          instructions: p.notes,
-        }))
+        const itemsToInsert = prescriptions.map((p: any) => {
+          const whenToTake: string[] = p.whenToTake || p.when_to_take || ['as directed']
+          const frequencyStr = whenToTake
+            .map((s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' '))
+            .join(' + ')
+          return {
+            prescription_id: rxData.id,
+            medication_name: p.name,
+            medicine_name: p.name,
+            frequency: frequencyStr,
+            dosage: p.dosage || null,
+            when_to_take: whenToTake,
+            timing: p.timing || null,
+            meal_relation: p.mealRelation || p.meal_relation || 'any',
+            duration_days: p.durationDays || p.duration_days || 7,
+            notes: p.notes || null,
+          }
+        })
 
         const { error: itemsError } = await supabase
           .from('prescription_items')

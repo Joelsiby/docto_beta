@@ -17,7 +17,9 @@ interface MedSchedule {
   scheduled_time: string
   instructions: string
   status: string
+  time_of_day?: string
 }
+
 
 export default function PatientMedicationsPage() {
   const supabase = createClient()
@@ -75,11 +77,8 @@ export default function PatientMedicationsPage() {
     if (!error && data && data.length > 0) {
       setMeds(data)
     } else {
-      setMeds([
-        { id: '1', medication_name: 'Amoxicillin', dosage: '500mg', scheduled_time: '08:00:00', instructions: 'After breakfast', status: 'taken' },
-        { id: '2', medication_name: 'Vitamin D3', dosage: '1000 IU', scheduled_time: '13:00:00', instructions: 'With lunch', status: 'pending' },
-        { id: '3', medication_name: 'Atorvastatin', dosage: '10mg', scheduled_time: '21:00:00', instructions: 'Before sleep', status: 'pending' },
-      ])
+      if (error) console.error('Failed to fetch medication_schedule:', error)
+      setMeds([])
     }
   }
 
@@ -105,164 +104,193 @@ export default function PatientMedicationsPage() {
   const takenToday = meds.filter(m => m.status === 'taken').length
   const totalToday = meds.length
 
-  const VIEW_TABS: { key: ViewMode; label: string; icon: any }[] = [
-    { key: 'today',   label: 'Today',   icon: List },
-    { key: 'weekly',  label: 'Weekly',  icon: Calendar },
-    { key: 'monthly', label: 'Monthly', icon: LayoutGrid },
+  const VIEW_TABS: { key: ViewMode; label: string }[] = [
+    { key: 'today',   label: 'Day' },
+    { key: 'weekly',  label: 'Week' },
+    { key: 'monthly', label: 'Month' },
   ]
+
+  const totalTasks = meds.length
+  const completedTasks = meds.filter(m => m.status === 'taken').length
+  const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+  
+  // Group meds by time of day
+  const groupedMeds: Record<string, MedSchedule[]> = {}
+  meds.forEach(med => {
+    const timeOfDay = med.time_of_day || 'morning'
+    if (!groupedMeds[timeOfDay]) groupedMeds[timeOfDay] = []
+    groupedMeds[timeOfDay].push(med)
+  })
+
+  // Format time for timeline
+  const getSlotTime = (slot: string) => {
+    switch (slot) {
+      case 'morning': return '8:00 AM'
+      case 'afternoon': return '1:00 PM'
+      case 'evening': return '8:00 PM'
+      case 'night': return '10:00 PM'
+      default: return ''
+    }
+  }
 
   return (
     <div className="space-y-6 pb-24 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: 'var(--font-headline)' }}>
-            Medications
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Medication Schedule
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Track your prescriptions & earn rewards</p>
+          <p className="text-sm text-gray-500 mt-1">Track your daily adherence and unlock rewards.</p>
         </div>
 
         {/* View toggle */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 self-start">
-          {VIEW_TABS.map(({ key, label, icon: Icon }) => (
+        <div className="flex bg-gray-100 rounded-lg p-1 self-start">
+          {VIEW_TABS.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setViewMode(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all ${
                 viewMode === key
                   ? 'bg-white text-[#0050cb] shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Icon className="h-3.5 w-3.5" />
               {label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Gamification Banner */}
-      <div className="bg-gradient-to-r from-orange-400 via-rose-500 to-pink-500 rounded-3xl p-6 text-white shadow-xl shadow-rose-500/20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-              <Flame className="h-8 w-8 text-white animate-bounce" />
-            </div>
-            <div>
-              <p className="text-white/80 text-sm font-medium uppercase tracking-wider mb-1">Current Streak</p>
-              <h2 className="text-4xl font-black">{streak.current} Days</h2>
-            </div>
-          </div>
-          <div className="flex-1 w-full md:max-w-xs space-y-2">
-            <div className="flex justify-between text-xs font-semibold">
-              <span>Next Reward: 10% Off</span>
-              <span>{30 - (streak.current % 30)} days left</span>
-            </div>
-            <div className="h-3 w-full bg-black/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${discountProgress}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-white/70">Take meds on time to unlock consultation discounts!</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-2 border border-amber-100">
-            <Trophy className="h-5 w-5 text-amber-500" />
-          </div>
-          <p className="text-lg font-bold text-gray-900">{streak.longest}</p>
-          <p className="text-[10px] text-gray-500 font-medium">Best Streak</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-2 border border-emerald-100">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-          </div>
-          <p className="text-lg font-bold text-gray-900">{streak.total_on_time}</p>
-          <p className="text-[10px] text-gray-500 font-medium">Total On Time</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-2 border border-blue-100">
-            <Pill className="h-5 w-5 text-[#0050cb]" />
-          </div>
-          <p className="text-lg font-bold text-gray-900">{totalToday > 0 ? `${takenToday}/${totalToday}` : '—'}</p>
-          <p className="text-[10px] text-gray-500 font-medium">Today</p>
-        </div>
-      </div>
-
       {/* ── TODAY VIEW ── */}
       {viewMode === 'today' && (
-        <div className="space-y-4">
-          <h3 className="text-base font-bold text-gray-900">
-            Today's Schedule — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 px-2">
+          
+          {/* Main Tasks Column */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-hidden">
+            <div className="flex justify-between items-center mb-8 border-b border-gray-50 pb-4">
+              <h2 className="text-xl font-bold text-gray-900">Today's Tasks</h2>
+              <div className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </div>
+            </div>
 
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2].map(i => (
-                <div key={i} className="h-24 bg-white rounded-2xl border border-gray-100 animate-pulse" />
-              ))}
-            </div>
-          ) : meds.length === 0 ? (
-            <div className="text-center py-10 bg-white rounded-2xl border border-gray-100 border-dashed">
-              <Pill className="h-8 w-8 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm font-medium text-gray-900">No medications scheduled today.</p>
-              <p className="text-xs text-gray-500 mt-1">Enjoy your day!</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {meds.map((med) => {
-                const isTaken = med.status === 'taken'
-                return (
-                  <div
-                    key={med.id}
-                    className={`rounded-2xl border transition-all duration-300 p-5 flex items-center justify-between gap-4 ${
-                      isTaken
-                        ? 'bg-gray-50 border-gray-200/60 opacity-70'
-                        : 'bg-white border-gray-100 shadow-sm hover:border-blue-100 hover:shadow-md'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => handleTakeMed(med.id, med.status)}
-                        className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all ${
-                          isTaken
-                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                            : 'border-gray-200 bg-gray-50 text-gray-400 hover:border-emerald-400 hover:text-emerald-500'
-                        }`}
-                      >
-                        {isTaken ? <CheckCircle2 className="h-6 w-6" /> : <Pill className="h-5 w-5" />}
-                      </button>
-                      <div>
-                        <h4 className={`text-base font-bold ${isTaken ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                          {med.medication_name}
-                        </h4>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs font-semibold text-[#0050cb] bg-blue-50 px-2 py-0.5 rounded-md">
-                            {med.dosage}
-                          </span>
-                          <span className="text-xs text-gray-500">{med.instructions}</span>
-                        </div>
+            {isLoading ? (
+              <div className="space-y-4 animate-pulse">
+                <div className="h-20 bg-gray-100 rounded-lg" />
+                <div className="h-20 bg-gray-100 rounded-lg" />
+              </div>
+            ) : meds.length === 0 ? (
+              <div className="text-center py-10">
+                <Pill className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">No medications scheduled for today.</p>
+              </div>
+            ) : (
+              <div className="relative pl-6 space-y-10 before:absolute before:inset-0 before:ml-8 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent">
+                {['morning', 'afternoon', 'evening', 'night', 'as_needed'].map(slot => {
+                  const slotMeds = groupedMeds[slot]
+                  if (!slotMeds || slotMeds.length === 0) return null
+                  const isPast = slot === 'morning' && new Date().getHours() > 12
+
+                  return (
+                    <div key={slot} className="relative">
+                      {/* Timeline Dot */}
+                      <div className="absolute -left-[29px] top-1 bg-white p-1">
+                        <div className={`w-3.5 h-3.5 rounded-full border-2 ${isPast ? 'border-gray-400' : 'border-[#0050cb]'}`} />
+                      </div>
+                      
+                      <h3 className="text-xs font-bold text-[#0050cb] uppercase tracking-wider mb-4 flex items-center gap-2">
+                        {slot.replace('_', ' ')} ({getSlotTime(slot)})
+                      </h3>
+
+                      <div className="space-y-3">
+                        {slotMeds.map(med => {
+                          const isTaken = med.status === 'taken'
+                          return (
+                            <div key={med.id} className="bg-white border border-gray-100 shadow-sm rounded-xl p-4 flex items-start gap-4 hover:border-[#0050cb]/30 transition-all">
+                              <button
+                                onClick={() => handleTakeMed(med.id, med.status)}
+                                className={`w-6 h-6 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                                  isTaken ? 'bg-[#0050cb] border-[#0050cb] text-white' : 'border-gray-300 bg-gray-50 text-transparent hover:border-[#0050cb]'
+                                }`}
+                              >
+                                <svg viewBox="0 0 14 14" fill="none" className="w-4 h-4"><path d="M3 8L6 11L11 3.5" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" stroke="currentColor"/></svg>
+                              </button>
+                              
+                              <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                  <h4 className={`font-bold text-base ${isTaken ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                                    {med.medication_name}
+                                  </h4>
+                                  {med.dosage && (
+                                    <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-bold ml-2 flex-shrink-0">
+                                      {med.dosage}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1 font-medium">
+                                  <span className="material-symbols-outlined text-[14px]">restaurant</span>
+                                  {med.instructions || 'Take as directed'}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold text-gray-900">{formatTime(med.scheduled_time)}</p>
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                        isTaken ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'
-                      }`}>
-                        {isTaken ? 'Taken' : 'Pending'}
-                      </span>
-                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar Columns */}
+          <div className="space-y-6">
+            
+            {/* Adherence Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-6">Daily Adherence</h3>
+              
+              <div className="relative w-32 h-32 mx-auto mb-6">
+                {/* SVG Progress Circle */}
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                  <circle 
+                    cx="50" cy="50" r="45" fill="none" stroke="#0050cb" strokeWidth="10"
+                    strokeDasharray={`${progressPercentage * 2.827} 282.7`}
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="flex items-baseline">
+                    <span className="text-4xl font-black text-gray-900">{completedTasks}</span>
+                    <span className="text-xl font-bold text-gray-400">/{totalTasks}</span>
                   </div>
-                )
-              })}
+                </div>
+              </div>
+
+              <p className="text-sm font-medium text-gray-600 leading-relaxed">
+                {progressPercentage === 100 
+                  ? "Great job! You've completed all your tasks for today."
+                  : "You're on track! Complete your evening medication to reach 100%."}
+              </p>
             </div>
-          )}
+
+            {/* Info Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0050cb] flex items-center justify-center font-bold font-serif italic">
+                  i
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Did you know?</h3>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Consistent adherence improves long-term outcomes by 40%. Keep up the good work to maintain your streak and earn healthcare rewards.
+              </p>
+            </div>
+
+          </div>
         </div>
       )}
 

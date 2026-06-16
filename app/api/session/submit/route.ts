@@ -76,21 +76,26 @@ export async function POST(req: Request) {
             }
 
             // Build meal instruction text
-            const mealInstruction =
-              item.meal_relation === 'before_meals'
-                ? 'Take before meals'
-                : item.meal_relation === 'after_meals'
-                  ? 'Take after meals'
-                  : item.meal_relation === 'with_meals'
-                    ? 'Take with meals'
-                    : item.notes || 'Take as directed'
+            let mealInstruction = ''
+            if (item.meal_relation === 'before_meals') {
+              mealInstruction = 'Take before meals'
+            } else if (item.meal_relation === 'after_meals') {
+              mealInstruction = 'Take after meals'
+            } else if (item.meal_relation === 'with_meals') {
+              mealInstruction = 'Take with meals'
+            }
 
-            const instructions = [
-              mealInstruction,
-              item.notes ? ` — ${item.notes}` : '',
-            ]
-              .join('')
-              .trim()
+            const instructionsList = []
+            if (mealInstruction) {
+              instructionsList.push(mealInstruction)
+            }
+            if (item.notes) {
+              instructionsList.push(item.notes)
+            }
+            if (instructionsList.length === 0) {
+              instructionsList.push('Take as directed')
+            }
+            const instructions = instructionsList.join(' — ')
 
             // Generate one row per time-of-day per day for the duration
             for (let dayOffset = 0; dayOffset < durationDays; dayOffset++) {
@@ -103,7 +108,7 @@ export async function POST(req: Request) {
                   patient_id: patientId,
                   session_id: sessionId,
                   prescription_item_id: item.id,
-                  medication_name: item.name,
+                  medication_name: item.medicine_name || item.medication_name,
                   dosage: item.dosage || '1 tablet',
                   scheduled_date: scheduleDateStr,
                   scheduled_time: timeSlotMap[slot] || '08:00',
