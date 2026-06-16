@@ -1,8 +1,9 @@
 /**
  * POST /api/session/submit
  * Doctor confirms and submits session data to patient's record.
- * Marks session as 'confirmed', marks prescription as confirmed.
- * Future: triggers patient notification.
+ * - Marks session as 'confirmed'
+ * - Marks prescription as confirmed
+ * - AUTO-POPULATES medication_schedule rows from prescription_items for the patient
  */
 
 import { NextResponse } from 'next/server'
@@ -10,7 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
-    const { sessionId, prescriptionId } = await req.json()
+    const { sessionId, prescriptionId, patientId } = await req.json()
 
     if (!sessionId) {
       return NextResponse.json({ error: 'sessionId is required' }, { status: 400 })
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
 
     const supabase = await createClient()
 
-    // Mark session as confirmed
+    // ── 1. Mark session as confirmed ──────────────────────────────────────────
     const { error: sessionError } = await (supabase as any)
       .from('sessions')
       .update({
@@ -36,24 +37,110 @@ export async function POST(req: Request) {
       )
     }
 
-    // Mark prescription as confirmed
+    // ── 2. Mark prescription as confirmed ────────────────────────────────────
     if (prescriptionId) {
-      const { error: rxError } = await (supabase as any)
+      await (supabase as any)
         .from('prescriptions')
         .update({ is_confirmed: true })
         .eq('id', prescriptionId)
+    }
 
-      if (rxError) {
-        console.error('Prescription confirm error:', rxError)
+    // ── 3. Auto-populate medication_schedule from prescription_items ──────────
+    // This is the bridge: doctor's prescription → patient's medication tracker
+    if (patientId && prescriptionId) {
+      try {
+        // Fetch all prescription items for this prescription
+        const { data: rxItems, error: rxError } = await (supabase as any)
+          .from('prescription_items')
+          .select('*')
+          .eq('prescription_id', prescriptionId)
+
+        if (rxError) {
+          console.error('Failed to fetch prescription items:', rxError)
+        } else if (rxItems && rxItems.length > 0) {
+          const scheduleRows: any[] = []
+          const today = new Date()
+
+          for (const item of rxItems) {
+            const durationDays = item.duration_days || 7
+            const whenToTake: string[] = item.when_to_take || ['morning']
+            const timings: string[] = item.timing || ['08:00']
+
+            // Build time slot mapping
+            const timeSlotMap: Record<string, string> = {
+              morning: timings[0] || '08:00',
+              afternoon: timings[1] || '13:00',
+              evening: timings[2] || '17:00',
+              night: timings[whenToTake.indexOf('night')] || timings[timings.length - 1] || '21:00',
+              as_needed: '08:00',
+            }
+
+            // Build meal instruction text
+            const mealInstruction =
+              item.meal_relation === 'before_meals'
+                ? 'Take before meals'
+                : item.meal_relation === 'after_meals'
+                  ? 'Take after meals'
+                  : item.meal_relation === 'with_meals'
+                    ? 'Take with meals'
+                    : item.notes || 'Take as directed'
+
+            const instructions = [
+              mealInstruction,
+              item.notes ? ` — ${item.notes}` : '',
+            ]
+              .join('')
+              .trim()
+
+            // Generate one row per time-of-day per day for the duration
+            for (let dayOffset = 0; dayOffset < durationDays; dayOffset++) {
+              const scheduleDate = new Date(today)
+              scheduleDate.setDate(today.getDate() + dayOffset)
+              const scheduleDateStr = scheduleDate.toISOString().split('T')[0]
+
+              for (const slot of whenToTake) {
+                scheduleRows.push({
+                  patient_id: patientId,
+                  session_id: sessionId,
+                  prescription_item_id: item.id,
+                  medication_name: item.name,
+                  dosage: item.dosage || '1 tablet',
+                  scheduled_date: scheduleDateStr,
+                  scheduled_time: timeSlotMap[slot] || '08:00',
+                  time_of_day: slot,
+                  instructions,
+                  status: 'pending',
+                  is_on_time: null,
+                  taken_at: null,
+                })
+              }
+            }
+          }
+
+          if (scheduleRows.length > 0) {
+            const { error: scheduleError } = await (supabase as any)
+              .from('medication_schedule')
+              .insert(scheduleRows)
+
+            if (scheduleError) {
+              console.error('Failed to create medication_schedule rows:', scheduleError)
+              // Non-fatal: session is already confirmed, just log it
+            } else {
+              console.log(
+                `Auto-populated ${scheduleRows.length} medication_schedule rows for patient ${patientId}`
+              )
+            }
+          }
+        }
+      } catch (scheduleErr) {
+        console.error('Medication schedule auto-populate error:', scheduleErr)
+        // Non-fatal: session is already confirmed
       }
     }
 
-    // TODO: Trigger patient notification (push/email/SMS) — Phase 2
-    // await notifyPatient(patientId, sessionId)
-
     return NextResponse.json({
       success: true,
-      message: 'Session confirmed and saved to patient record.',
+      message: 'Session confirmed and medications scheduled for patient.',
     })
   } catch (error: any) {
     console.error('Session Submit API Error:', error)

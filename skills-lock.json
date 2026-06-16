@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "Medical Imaging Pipelines": {
+      "source": "aurabx/skills",
+      "sourceType": "github",
+      "skillPath": "skills/medical-imaging-pipelines/SKILL.md",
+      "computedHash": "2f0f05731843cb06bad266920f497a1e84476a4000cd9bd97e347e1166f15290"
+    }
+  }
+}
