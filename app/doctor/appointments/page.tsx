@@ -59,7 +59,7 @@ export default function AppointmentsPage() {
       if (docError) throw docError
 
       if (doctor) {
-        setDoctorId(doctor.id)
+        setDoctorId((doctor as any).id)
 
         // Fetch today's appointments
         const { data: appData, error: appError } = await supabase
@@ -77,7 +77,7 @@ export default function AppointmentsPage() {
               full_name
             )
           `)
-          .eq('doctor_id', doctor.id)
+          .eq('doctor_id', (doctor as any).id)
           .eq('appointment_date', new Date().toISOString().split('T')[0])
           .order('appointment_time', { ascending: true })
 
@@ -115,7 +115,7 @@ export default function AppointmentsPage() {
     setError('')
 
     try {
-      const { error: insertError } = await supabase.from('appointments').insert({
+      const { error: insertError } = await (supabase as any).from('appointments').insert({
         doctor_id: doctorId,
         patient_id: selectedPatientId,
         appointment_date: newDate,

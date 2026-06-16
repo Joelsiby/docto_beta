@@ -46,7 +46,7 @@ export default function PrintRecordsPage() {
             notes
           )
         `)
-        .eq('patient_id', prof.id)
+        .eq('patient_id', (prof as any).id)
         .order('created_at', { ascending: false })
 
       setPrescriptions(prescs || [])
@@ -55,7 +55,7 @@ export default function PrintRecordsPage() {
       const { data: reps } = await supabase
         .from('health_reports')
         .select('*')
-        .eq('patient_id', prof.id)
+        .eq('patient_id', (prof as any).id)
         .order('created_at', { ascending: false })
 
       setReports(reps || [])

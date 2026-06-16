@@ -32,7 +32,7 @@ export default function ResearchHubPage() {
           .eq('user_id', user.id)
           .maybeSingle()
           .then(({ data }) => {
-            if (data) setDoctorId(data.id)
+            if (data) setDoctorId((data as any).id)
           })
       }
     })
@@ -104,7 +104,7 @@ export default function ResearchHubPage() {
     }
 
     try {
-      const { error } = await supabase.from('research_documents').insert({
+      const { error } = await (supabase as any).from('research_documents').insert({
         doctor_id: doctorId,
         title,
         insights: keyTakeaways,

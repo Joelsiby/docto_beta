@@ -107,14 +107,14 @@ export default function PatientReportsPage() {
       const result = await res.json()
 
       if (result.analysis) {
-        await supabase
+        await (supabase as any)
           .from('health_reports')
           .update({
             status: 'analyzed',
             ai_analysis: result.analysis,
             flagged_parameters: result.flagged || [],
             analyzed_at: new Date().toISOString(),
-          } as any)
+          })
           .eq('id', reportData.id)
       }
 

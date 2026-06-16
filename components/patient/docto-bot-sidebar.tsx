@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { MessageSquare, X, Send, Sparkles, ShieldAlert, ChevronDown, Minus } from 'lucide-react'
+import { X, Send, ShieldAlert, Minus } from 'lucide-react'
 
 interface Message {
   id: string
@@ -21,6 +21,16 @@ const QUICK_PROMPTS = [
   'When should I take my medicines?',
   'Is it safe to miss a dose?',
 ]
+
+function DoctoBotIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
+      <circle cx="9" cy="13" r="1" fill="currentColor" />
+      <circle cx="15" cy="13" r="1" fill="currentColor" />
+    </svg>
+  )
+}
 
 export function DoctoBotSidebar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -138,7 +148,7 @@ export function DoctoBotSidebar() {
           className="fixed bottom-24 right-4 md:bottom-8 md:right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0050cb] to-[#3d8bfd] text-white shadow-xl shadow-blue-500/30 flex items-center justify-center hover:scale-110 transition-all duration-200 group"
           title="Open Docto Bot"
         >
-          <MessageSquare className="h-6 w-6 group-hover:scale-110 transition-transform" />
+          <DoctoBotIcon size={24} className="group-hover:scale-110 transition-transform" />
           {/* Pulse ring */}
           <span className="absolute inset-0 rounded-2xl animate-ping bg-[#0050cb]/30 pointer-events-none" />
         </button>
@@ -159,7 +169,7 @@ export function DoctoBotSidebar() {
               onClick={() => setIsMinimized(false)}
               className="flex items-center gap-2.5 bg-[#0050cb] text-white px-4 py-3 rounded-2xl shadow-xl shadow-blue-500/30 hover:bg-[#003d9e] transition-colors"
             >
-              <MessageSquare className="h-5 w-5" />
+              <DoctoBotIcon size={20} />
               <span className="text-sm font-semibold">Docto Bot</span>
               {messages.length > 1 && (
                 <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
@@ -173,7 +183,7 @@ export function DoctoBotSidebar() {
               {/* Header */}
               <div className="flex items-center gap-3 px-4 py-3.5 bg-gradient-to-r from-[#0050cb] to-[#3d8bfd] text-white flex-shrink-0">
                 <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
-                  <MessageSquare className="h-4 w-4 text-white" />
+                  <DoctoBotIcon size={16} className="text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold truncate">Docto Bot</h3>
@@ -217,7 +227,7 @@ export function DoctoBotSidebar() {
                   >
                     {msg.role === 'assistant' && (
                       <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0050cb] to-[#3d8bfd] flex items-center justify-center flex-shrink-0 mb-1 shadow-md">
-                        <Sparkles className="h-3.5 w-3.5 text-white" />
+                        <DoctoBotIcon size={14} className="text-white" />
                       </div>
                     )}
                     <div

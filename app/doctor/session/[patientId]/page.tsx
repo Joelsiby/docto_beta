@@ -280,7 +280,7 @@ export default function ClinicalSessionPage() {
             .from('prescriptions')
             .insert({
               session_id: sessionId,
-              doctor_id: doctorProfile.id,
+              doctor_id: (doctorProfile as any).id,
               patient_id: patientId,
               is_confirmed: false,
             })

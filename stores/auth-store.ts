@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
               ...state.session,
               id: userId,
               role: 'doctor',
-              fullName: doctorData.full_name,
+              fullName: (doctorData as any).full_name,
             },
           }))
           return 'doctor'
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
               ...state.session,
               id: userId,
               role: 'patient',
-              fullName: patientData.full_name,
+              fullName: (patientData as any).full_name,
             },
           }))
           return 'patient'
