@@ -123,6 +123,20 @@ export default function SessionReviewPage() {
           .insert(itemsToInsert as any)
 
         if (itemsError) throw itemsError
+
+        // 4. Populate medication_schedule for patient's daily/weekly tasks
+        const submitRes = await fetch('/api/session/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionData.id,
+            prescriptionId: rxData.id,
+            patientId,
+          }),
+        })
+        if (!submitRes.ok) {
+          console.error('Medication schedule population failed:', await submitRes.text())
+        }
       }
 
       alert("Clinical findings and prescription successfully sent to patient profile!")

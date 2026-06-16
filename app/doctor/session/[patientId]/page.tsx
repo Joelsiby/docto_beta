@@ -249,13 +249,78 @@ export default function ClinicalSessionPage() {
   // ── Submit to Patient Record ───────────────────────────────────────────────
 
   const handleFinalSubmit = async () => {
-    await fetch('/api/session/submit', {
+    // 1. Save doctor's edited prescriptions to DB before submitting
+    //    This ensures doctor edits (in Zustand store) are not lost
+    if (prescriptionId && prescriptions.length > 0) {
+      await fetch('/api/session/update-prescriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prescriptionId, prescriptions }),
+      })
+    } else if (prescriptions.length > 0 && !prescriptionId) {
+      // No prescriptionId yet — create prescription + items inline
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user && patientId) {
+        const { data: doctorProfile } = await supabase
+          .from('doctor_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (doctorProfile) {
+          const { data: newRx } = await (supabase as any)
+            .from('prescriptions')
+            .insert({
+              session_id: sessionId,
+              doctor_id: doctorProfile.id,
+              patient_id: patientId,
+              is_confirmed: false,
+            })
+            .select('id')
+            .single()
+          if (newRx) {
+            const items = prescriptions.map((rx: any, i: number) => ({
+              prescription_id: newRx.id,
+              medicine_name: rx.name,
+              medication_name: rx.name,
+              dosage: rx.dosage || null,
+              when_to_take: rx.whenToTake || ['morning'],
+              timing: rx.timing || [],
+              meal_relation: rx.mealRelation || 'any',
+              duration_days: rx.durationDays || 7,
+              notes: rx.notes || null,
+              actions: rx.actions || null,
+              sort_order: i,
+            }))
+            await (supabase as any).from('prescription_items').insert(items)
+            // Use this new prescriptionId for submission
+            const submitRes = await fetch('/api/session/submit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sessionId, prescriptionId: newRx.id, patientId }),
+            })
+            if (submitRes.ok) {
+              setSessionStatus('submitted')
+              setShowConfirmModal(false)
+            }
+            return
+          }
+        }
+      }
+    }
+
+    // 2. Submit — reads updated prescription_items from DB and populates medication_schedule
+    const res = await fetch('/api/session/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId, prescriptionId, patientId }),
     })
-    setSessionStatus('submitted')
-    setShowConfirmModal(false)
+    if (res.ok) {
+      setSessionStatus('submitted')
+      setShowConfirmModal(false)
+    } else {
+      console.error('Submit failed:', await res.text())
+    }
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────

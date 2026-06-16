@@ -8,6 +8,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(req: Request) {
   try {
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = await createClient()
+    const adminDb = createAdminClient()
 
     // ── 1. Mark session as confirmed ──────────────────────────────────────────
     const { error: sessionError } = await (supabase as any)
@@ -47,6 +49,8 @@ export async function POST(req: Request) {
 
     // ── 3. Auto-populate medication_schedule from prescription_items ──────────
     // This is the bridge: doctor's prescription → patient's medication tracker
+    // Uses admin client (service_role) to bypass RLS — the doctor calling this
+    // endpoint is not the patient, so patient-scoped RLS would block the insert
     if (patientId && prescriptionId) {
       try {
         // Fetch all prescription items for this prescription
@@ -123,7 +127,15 @@ export async function POST(req: Request) {
           }
 
           if (scheduleRows.length > 0) {
-            const { error: scheduleError } = await (supabase as any)
+            // Use admin client (service_role) to bypass RLS — the doctor
+            // calling this is not the patient, so patient-scoped RLS blocks insert
+            // Remove any existing schedule rows for this session to avoid duplicates
+            await (adminDb as any)
+              .from('medication_schedule')
+              .delete()
+              .eq('session_id', sessionId)
+
+            const { error: scheduleError } = await (adminDb as any)
               .from('medication_schedule')
               .insert(scheduleRows)
 
