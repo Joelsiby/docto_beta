@@ -82,9 +82,7 @@ export default function ClinicalSessionPage() {
     initialPatientRef.current = patientId
 
     const shouldClear = 
-      (currentPatientId !== null && currentPatientId !== patientId) ||
-      sessionStatus === 'submitted' ||
-      sessionStatus === 'confirmed'
+      (currentPatientId !== null && currentPatientId !== patientId)
 
     if (shouldClear) {
       clearSession()

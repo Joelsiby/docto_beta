@@ -112,9 +112,6 @@ export function SessionRecorder({ onStop }: SessionRecorderProps) {
   }
 
   const startRecording = () => {
-    // Clear any previous session data so old transcript/prescriptions don't
-    // carry over when starting a new session with the same patient
-    clearSession()
     const recognition = initSpeechRecognition()
     recognitionRef.current = recognition
     try { recognition?.start() } catch { /* already started */ }
