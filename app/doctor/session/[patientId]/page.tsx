@@ -81,14 +81,19 @@ export default function ClinicalSessionPage() {
     if (!hasHydrated) return
     initialPatientRef.current = patientId
 
-    if (currentPatientId !== null && currentPatientId !== patientId) {
+    const shouldClear = 
+      (currentPatientId !== null && currentPatientId !== patientId) ||
+      sessionStatus === 'submitted' ||
+      sessionStatus === 'confirmed'
+
+    if (shouldClear) {
       clearSession()
       setCurrentPatientId(patientId)
     } else if (currentPatientId === null) {
       setCurrentPatientId(patientId)
     }
     setReady(true)
-  }, [patientId, currentPatientId, clearSession, setCurrentPatientId, hasHydrated])
+  }, [patientId, currentPatientId, sessionStatus, clearSession, setCurrentPatientId, hasHydrated])
 
   // ── Fetch Patient Data ─────────────────────────────────────────────────────
   React.useEffect(() => {

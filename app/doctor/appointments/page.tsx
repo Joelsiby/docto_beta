@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { DoctorTopBar } from '@/components/doctor/top-bar'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { useSessionStore } from '@/stores/session-store'
 
 interface Appointment {
   id: string
@@ -371,6 +372,9 @@ export default function AppointmentsPage() {
                     </button>
                     <Link
                       href={`/doctor/session/${a.patient_id}`}
+                      onClick={() => {
+                        useSessionStore.getState().clearSession()
+                      }}
                       style={{
                         padding: '7px 16px',
                         borderRadius: 8,

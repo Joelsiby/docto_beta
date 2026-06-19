@@ -54,11 +54,10 @@ export async function updateSession(request: NextRequest) {
   const isPatientRoute = request.nextUrl.pathname.startsWith('/patient')
 
   if (!user && (isDoctorRoute || isPatientRoute)) {
-    // TEMPORARY BYPASS: Allow access to doctor/patient routes without auth for Phase 3 dev
-    // const url = request.nextUrl.clone()
-    // url.pathname = '/login'
-    // url.searchParams.set('redirect', request.nextUrl.pathname)
-    // return NextResponse.redirect(url)
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('redirect', request.nextUrl.pathname)
+    return NextResponse.redirect(url)
   }
 
   // Redirect authenticated users away from auth pages
