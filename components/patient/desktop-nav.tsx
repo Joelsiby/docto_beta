@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import { createClient } from '@/lib/supabase/client'
 
@@ -18,8 +18,14 @@ const NAV_ITEMS = [
 
 export default function PatientDesktopNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const supabase = createClient()
   const [userName, setUserName] = useState('')
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -77,8 +83,8 @@ export default function PatientDesktopNav() {
         })}
       </nav>
 
-      {/* Bottom: Profile link */}
-      <div className="mt-auto pt-4 border-t border-gray-100">
+      {/* Bottom: Profile & Logout */}
+      <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-1">
         <Link
           href="/patient/settings"
           className={clsx(
@@ -91,6 +97,13 @@ export default function PatientDesktopNav() {
           <span className="material-symbols-outlined text-[20px]">person</span>
           <span>{profileLabel}</span>
         </Link>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer w-full text-left"
+        >
+          <span className="material-symbols-outlined text-[20px]">logout</span>
+          <span>Log out</span>
+        </button>
       </div>
     </aside>
   )

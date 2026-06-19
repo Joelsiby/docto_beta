@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, ShieldAlert, Minus } from 'lucide-react'
+import { X, Send, ShieldAlert, Minus, Mic, MicOff } from 'lucide-react'
+import { useWebSpeech } from '@/lib/hooks/use-web-speech'
 
 interface Message {
   id: string
@@ -22,6 +23,41 @@ const QUICK_PROMPTS = [
   'Is it safe to miss a dose?',
 ]
 
+function LoadingText({ active, isDoctor = false }: { active: boolean; isDoctor?: boolean }) {
+  const [index, setIndex] = useState(0)
+  const messages = [
+    "Thinking...",
+    "Reviewing health profile...",
+    "Consulting clinical guidelines...",
+    "Analyzing reports...",
+    "Formulating response..."
+  ]
+
+  useEffect(() => {
+    if (!active) return
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % messages.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [active])
+
+  if (!active) return null
+
+  return (
+    <span 
+      style={isDoctor ? {
+        fontSize: '11px',
+        color: '#86868B',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        opacity: 0.8,
+      } : undefined}
+      className={!isDoctor ? "text-[11px] text-gray-400 font-medium animate-pulse ml-1" : undefined}
+    >
+      {messages[index]}
+    </span>
+  )
+}
+
 function DoctoBotIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -40,6 +76,19 @@ export function DoctoBotSidebar() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    isTalkMode,
+    isListening,
+    isSpeaking,
+    supported,
+    startTalkMode,
+    stopTalkMode,
+    speak,
+  } = useWebSpeech({
+    onTranscript: (text) => handleSend(text),
+    isLoading,
+  })
 
   // Persist open state across pages
   useEffect(() => {
@@ -62,7 +111,13 @@ export function DoctoBotSidebar() {
     localStorage.setItem('doctobot-open', isOpen ? 'true' : 'false')
   }, [isOpen, isMinimized])
 
-  const handleSend = async (messageText?: string) => {
+  useEffect(() => {
+    if (isMinimized || !isOpen) {
+      stopTalkMode()
+    }
+  }, [isMinimized, isOpen, stopTalkMode])
+
+  async function handleSend(messageText?: string) {
     const text = (messageText || input).trim()
     if (!text || isLoading) return
 
@@ -89,23 +144,32 @@ export function DoctoBotSidebar() {
       const data = await response.json()
       if (data.error) throw new Error(data.error)
 
+      const reply = data.message || "Namaste! I'm here to help."
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: data.message || "Namaste! I'm here to help.",
+          content: reply,
         },
       ])
+
+      if (isTalkMode) {
+        speak(reply)
+      }
     } catch {
+      const errMsg = "I'm having trouble connecting right now. Please try again in a moment."
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: "I'm having trouble connecting right now. Please try again in a moment.",
+          content: errMsg,
         },
       ])
+      if (isTalkMode) {
+        speak(errMsg)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -169,8 +233,12 @@ export function DoctoBotSidebar() {
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold truncate">Docto Bot</h3>
                   <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse flex-shrink-0" />
-                    <span className="text-[10px] text-blue-100 font-medium">Online • Patient Mode</span>
+                  <div className="flex items-center gap-1">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isListening ? 'bg-red-300 animate-ping' : 'bg-emerald-300 animate-pulse'}`} />
+                    <span className="text-[10px] text-blue-100 font-medium">
+                      {isListening ? 'Listening...' : isSpeaking ? 'Speaking...' : 'Online • Patient Mode'}
+                    </span>
+                  </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -228,6 +296,46 @@ export function DoctoBotSidebar() {
                     </div>
                   </div>
                 ))}
+                {isTalkMode && (
+                  <div className="flex items-center justify-center py-2 bg-blue-50/50 rounded-xl border border-blue-100/50 animate-pulse gap-2 text-xs font-semibold text-[#0050cb]">
+                    {isListening && (
+                      <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                        Listening... Speak now
+                      </>
+                    )}
+                    {isSpeaking && (
+                      <>
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        </span>
+                        Speaking...
+                      </>
+                    )}
+                    {!isListening && !isSpeaking && !isLoading && (
+                      <span>Waiting...</span>
+                    )}
+                  </div>
+                )}
+                {isLoading && (
+                  <div className="flex items-end gap-2 animate-fade-in">
+                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0050cb] to-[#3d8bfd] flex items-center justify-center flex-shrink-0 mb-1 shadow-md">
+                      <DoctoBotIcon size={14} className="text-white" />
+                    </div>
+                    <div className="bg-white border border-gray-100 shadow-sm rounded-2xl rounded-bl-sm px-3.5 py-2.5 max-w-[80%] flex items-center gap-2">
+                      <div className="flex items-center gap-1 h-4 flex-shrink-0">
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce [animation-delay:-0.3s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce [animation-delay:-0.15s]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" />
+                      </div>
+                      <LoadingText active={isLoading} />
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </div>
 
@@ -248,19 +356,32 @@ export function DoctoBotSidebar() {
 
               {/* Input */}
               <div className="flex items-center gap-2 px-3 py-3 bg-white border-t border-gray-100 flex-shrink-0">
+                {supported && (
+                  <button
+                    onClick={isTalkMode ? stopTalkMode : startTalkMode}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm flex-shrink-0 ${
+                      isTalkMode
+                        ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse'
+                        : 'bg-blue-50 text-[#0050cb] hover:bg-blue-100 border border-blue-100'
+                    }`}
+                    title={isTalkMode ? 'Stop Talk Mode' : 'Start Talk Mode'}
+                  >
+                    {isTalkMode ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </button>
+                )}
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask about your health..."
-                  disabled={isLoading}
+                  placeholder={isListening ? 'Listening...' : 'Ask about your health...'}
+                  disabled={isLoading || isListening}
                   className="flex-1 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#0050cb] focus:ring-1 focus:ring-[#0050cb]/30 transition-all bg-gray-50/50 placeholder:text-gray-400 disabled:opacity-60"
                 />
                 <button
                   onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
+                  disabled={!input.trim() || isLoading || isListening}
                   className="w-10 h-10 rounded-xl bg-[#0050cb] text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#003d9e] transition-colors flex items-center justify-center shadow-sm flex-shrink-0"
                 >
                   <Send className="h-4 w-4" />

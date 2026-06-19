@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
   {
@@ -42,9 +43,17 @@ const navItems = [
 
 export function DoctorSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
     <nav
+      className="hidden lg:flex flex-col items-center"
       style={{
         position: 'fixed',
         left: 0,
@@ -56,9 +65,6 @@ export function DoctorSidebar() {
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderRight: '1px solid rgba(0,0,0,0.06)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
         paddingTop: 20,
         paddingBottom: 20,
         gap: 0,
@@ -121,8 +127,8 @@ export function DoctorSidebar() {
         })}
       </div>
 
-      {/* Bottom: Settings */}
-      <div style={{ marginTop: 'auto', paddingLeft: 8, paddingRight: 8, width: '100%' }}>
+      {/* Bottom: Settings & Logout */}
+      <div style={{ marginTop: 'auto', paddingLeft: 8, paddingRight: 8, width: '100%', display: 'flex', flexDirection: 'column', gap: 6 }}>
         <button
           style={{
             display: 'flex',
@@ -145,6 +151,32 @@ export function DoctorSidebar() {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
           <span style={{ fontSize: 10, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>Settings</span>
+        </button>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '10px 4px',
+            borderRadius: 12,
+            background: 'transparent',
+            color: '#EF4444',
+            border: 'none',
+            cursor: 'pointer',
+            width: '100%',
+            gap: 4,
+            transition: 'all 150ms ease',
+          }}
+          title="Log out"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          <span style={{ fontSize: 10, fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif' }}>Logout</span>
         </button>
       </div>
     </nav>

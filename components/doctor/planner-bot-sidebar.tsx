@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePlannerStore, PlannerTask } from '@/stores/planner-store'
+import { Mic, MicOff } from 'lucide-react'
+import { useWebSpeech } from '@/lib/hooks/use-web-speech'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,6 +107,41 @@ const QUICK_CHIPS = [
   { label: '🔄 Duplicate today', value: "Duplicate today's tasks for tomorrow" },
 ]
 
+function LoadingText({ active, isDoctor = false }: { active: boolean; isDoctor?: boolean }) {
+  const [index, setIndex] = useState(0)
+  const messages = [
+    "Thinking...",
+    "Reviewing health profile...",
+    "Consulting clinical guidelines...",
+    "Analyzing reports...",
+    "Formulating response..."
+  ]
+
+  useEffect(() => {
+    if (!active) return
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % messages.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [active])
+
+  if (!active) return null
+
+  return (
+    <span 
+      style={isDoctor ? {
+        fontSize: '11px',
+        color: '#86868B',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        opacity: 0.8,
+      } : undefined}
+      className={!isDoctor ? "text-[11px] text-gray-400 font-medium animate-pulse ml-1" : undefined}
+    >
+      {messages[index]}
+    </span>
+  )
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 interface PlannerBotSidebarProps {
@@ -121,6 +158,37 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
   const [pendingConfirm, setPendingConfirm] = useState<BotAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    isTalkMode,
+    isListening,
+    isSpeaking,
+    supported,
+    startTalkMode,
+    stopTalkMode,
+    speak,
+  } = useWebSpeech({
+    onTranscript: (text) => sendMessage(text),
+    isLoading,
+  })
+
+  const lastSpokenIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (messages.length === 0) return
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg.role === 'assistant' && isTalkMode && lastMsg.id !== lastSpokenIdRef.current) {
+      lastSpokenIdRef.current = lastMsg.id
+      speak(lastMsg.content)
+    }
+  }, [messages, isTalkMode, speak])
+
+  // Stop talk mode if collapsed
+  useEffect(() => {
+    if (isCollapsed) {
+      stopTalkMode()
+    }
+  }, [isCollapsed, stopTalkMode])
 
   // Initialize from storage or show greeting
   useEffect(() => {
@@ -357,18 +425,22 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
         }
       }
     } catch (err: any) {
+      const errMsg = '⚠️ Oops! Something went wrong connecting to the AI. Please check your internet or API key.'
       setMessages((prev) => [
         ...prev,
         {
           id: genId(),
           role: 'assistant',
-          content: '⚠️ Oops! Something went wrong connecting to the AI. Please check your internet or API key.',
+          content: errMsg,
         },
       ])
+      if (isTalkMode) {
+        speak(errMsg)
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [isLoading, tasks, messages, dispatchAction])
+  }, [isLoading, tasks, messages, dispatchAction, isTalkMode, speak])
 
   // Handle yes/no for pending confirmation
   const handleConfirmation = useCallback(async (confirmed: boolean) => {
@@ -409,10 +481,10 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
       <button
         onClick={onToggleCollapse}
         title={isCollapsed ? 'Open Docto Bot' : 'Collapse Docto Bot'}
+        className="bottom-20 lg:bottom-6"
         style={{
           position: 'fixed',
           right: isCollapsed ? 12 : 332,
-          bottom: 24,
           zIndex: 200,
           width: 40,
           height: 40,
@@ -433,6 +505,7 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
 
       {/* Sidebar panel */}
       <div
+        className="absolute lg:relative right-0 top-0 z-40 lg:z-10 shadow-2xl lg:shadow-none"
         style={{
           width: isCollapsed ? 0 : 320,
           minWidth: isCollapsed ? 0 : 320,
@@ -445,8 +518,6 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
           overflow: 'hidden',
           transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1), min-width 0.3s cubic-bezier(0.4,0,0.2,1)',
           flexShrink: 0,
-          boxShadow: isCollapsed ? 'none' : '-4px 0 24px rgba(0,0,0,0.05)',
-          position: 'relative',
         }}
       >
         {/* Header */}
@@ -478,8 +549,8 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
               <div style={{ fontSize: 14, fontWeight: 700, color: '#0050cb', fontFamily: '-apple-system, sans-serif' }}>
                 Docto Bot
               </div>
-              <div style={{ fontSize: 11, color: '#86868B', fontFamily: '-apple-system, sans-serif' }}>
-                Your clinical planner assistant
+              <div style={{ fontSize: 11, color: isListening ? '#FF3B30' : '#86868B', fontFamily: '-apple-system, sans-serif', transition: 'color 0.2s' }}>
+                {isListening ? 'Listening...' : isSpeaking ? 'Speaking...' : 'Your clinical planner assistant'}
               </div>
             </div>
             <button
@@ -578,25 +649,28 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
                   borderRadius: '16px 16px 16px 4px',
                   padding: '10px 14px',
                   display: 'flex',
-                  gap: 5,
+                  gap: 8,
                   alignItems: 'center',
                   boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
                 }}
               >
-                {[0, 150, 300].map((delay) => (
-                  <div
-                    key={delay}
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: '50%',
-                      background: '#0050cb',
-                      opacity: 0.7,
-                      animation: 'bounce 1.2s infinite',
-                      animationDelay: `${delay}ms`,
-                    }}
-                  />
-                ))}
+                <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                  {[0, 150, 300].map((delay) => (
+                    <div
+                      key={delay}
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        background: '#0050cb',
+                        opacity: 0.7,
+                        animation: 'bounce 1.2s infinite',
+                        animationDelay: `${delay}ms`,
+                      }}
+                    />
+                  ))}
+                </div>
+                <LoadingText active={isLoading} isDoctor />
               </div>
             </div>
           )}
@@ -639,6 +713,40 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
             </div>
           )}
 
+          {isTalkMode && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px 12px',
+                background: 'rgba(0, 80, 203, 0.04)',
+                borderRadius: 12,
+                border: '1px dashed rgba(0, 80, 203, 0.2)',
+                gap: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#0050cb',
+                marginBottom: 8,
+              }}
+            >
+              {isListening && (
+                <>
+                  <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#FF3B30', animation: 'bounce 1.2s infinite' }} />
+                  Listening... Speak now
+                </>
+              )}
+              {isSpeaking && (
+                <>
+                  <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#0050cb', animation: 'bounce 1.2s infinite' }} />
+                  Speaking...
+                </>
+              )}
+              {!isListening && !isSpeaking && !isLoading && (
+                <span>Waiting...</span>
+              )}
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -664,13 +772,39 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
               transition: 'border-color 0.2s',
             }}
           >
+            {supported && (
+              <button
+                onClick={isTalkMode ? stopTalkMode : startTalkMode}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isTalkMode ? '#FF3B30' : '#0050cb',
+                  padding: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: isTalkMode ? 'rgba(255, 59, 48, 0.1)' : 'transparent',
+                  transition: 'all 150ms ease',
+                  alignSelf: 'center',
+                }}
+                title={isTalkMode ? 'Stop Talk Mode' : 'Start Talk Mode'}
+              >
+                {isTalkMode ? (
+                  <MicOff className="h-4 w-4" style={{ animation: 'pulse 1.5s infinite' }} />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </button>
+            )}
             <input
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading}
-              placeholder="Ask me anything... 💬"
+              disabled={isLoading || isListening}
+              placeholder={isListening ? 'Listening...' : 'Ask me anything... 💬'}
               style={{
                 flex: 1,
                 border: 'none',
@@ -680,21 +814,22 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
                 color: '#1D1D1F',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif',
                 resize: 'none',
+                opacity: (isLoading || isListening) ? 0.6 : 1,
               }}
             />
             <button
               onClick={() => sendMessage(input)}
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || isListening || !input.trim()}
               style={{
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
                 border: 'none',
-                background: isLoading || !input.trim()
+                background: isLoading || isListening || !input.trim()
                   ? 'rgba(0,80,203,0.15)'
                   : 'linear-gradient(135deg, #0050cb, #1d6bf3)',
-                color: isLoading || !input.trim() ? '#86868B' : '#fff',
-                cursor: isLoading || !input.trim() ? 'not-allowed' : 'pointer',
+                color: isLoading || isListening || !input.trim() ? '#86868B' : '#fff',
+                cursor: isLoading || isListening || !input.trim() ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -724,6 +859,10 @@ export function PlannerBotSidebar({ isCollapsed, onToggleCollapse }: PlannerBotS
           @keyframes bounce {
             0%, 80%, 100% { transform: translateY(0); }
             40% { transform: translateY(-6px); }
+          }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
           }
         `}</style>
       </div>

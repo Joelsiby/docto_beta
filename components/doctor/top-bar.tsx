@@ -15,6 +15,7 @@ export function DoctorTopBar({
 }) {
   return (
     <div
+      className="px-4 md:px-7"
       style={{
         height: 60,
         background: 'rgba(255,255,255,0.85)',
@@ -23,8 +24,6 @@ export function DoctorTopBar({
         borderBottom: '1px solid rgba(0,0,0,0.06)',
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: 28,
-        paddingRight: 28,
         gap: 12,
         flexShrink: 0,
       }}
@@ -60,9 +59,8 @@ export function DoctorTopBar({
       </div>
       {/* Search */}
       <div
+        className="hidden md:flex items-center"
         style={{
-          display: 'flex',
-          alignItems: 'center',
           gap: 8,
           background: 'rgba(142,142,147,0.12)',
           borderRadius: 10,

@@ -161,9 +161,13 @@ export default function ResearchHubPage() {
       />
 
       {/* Three-pane layout */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', padding: 20, gap: 16, background: '#F5F5F7' }}>
+      <div
+        className="flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden p-4 lg:p-5 gap-4"
+        style={{ display: 'flex', background: '#F5F5F7' }}
+      >
         {/* Left: Document Viewer */}
         <div
+          className="h-[500px] lg:h-auto"
           style={{
             flex: 1.5,
             background: '#fff',
@@ -186,6 +190,7 @@ export default function ResearchHubPage() {
 
         {/* Middle: Insights */}
         <div
+          className="h-[400px] lg:h-auto"
           style={{
             flex: 1.2,
             background: '#fff',
@@ -256,19 +261,19 @@ export default function ResearchHubPage() {
 
         {/* Right: Docto Bot */}
         <div
+          className="hidden lg:flex"
           style={{
             width: 320,
             background: '#fff',
             borderRadius: 14,
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             border: '1px solid rgba(0,0,0,0.05)',
-            display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             flexShrink: 0,
           }}
         >
-          <DoctoBotSidebar />
+          <DoctoBotSidebar inline={true} />
         </div>
       </div>
 
