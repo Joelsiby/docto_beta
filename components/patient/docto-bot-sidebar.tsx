@@ -67,7 +67,9 @@ export function DoctoBotSidebar() {
     if (!text || isLoading) return
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: text }
-    setMessages((prev) => [...prev, userMsg])
+    // Optimistically add user message
+    const updatedMessages = [...messages, userMsg]
+    setMessages(updatedMessages)
     setInput('')
     setIsLoading(true)
 
@@ -77,45 +79,24 @@ export function DoctoBotSidebar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          context: 'patient-mode',
+          history: updatedMessages
+            .filter((m) => m.id !== 'welcome')
+            .map((m) => ({ role: m.role, content: m.content })),
           tone: 'supportive',
         }),
       })
 
-      if (!response.body) throw new Error('No response body')
+      const data = await response.json()
+      if (data.error) throw new Error(data.error)
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let assistantContent = ''
-      const assistantMsgId = (Date.now() + 1).toString()
-
-      setMessages((prev) => [...prev, { id: assistantMsgId, role: 'assistant', content: '' }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') continue
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.text) {
-                assistantContent += parsed.text
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId ? { ...m, content: assistantContent } : m
-                  )
-                )
-              }
-            } catch {}
-          }
-        }
-      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: data.message || "Namaste! I'm here to help.",
+        },
+      ])
     } catch {
       setMessages((prev) => [
         ...prev,
