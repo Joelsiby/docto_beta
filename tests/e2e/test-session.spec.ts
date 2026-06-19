@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test'
 
 test('doctor session transcription and AI summary extraction flow', async ({ page }) => {
+  // Set high timeout for this test as the NVIDIA API takes ~70-120 seconds to extract
+  test.setTimeout(240000);
+
   // Capture page console logs
   page.on('console', msg => {
     console.log(`[BROWSER CONSOLE] [${msg.type()}] ${msg.text()}`);
@@ -30,7 +33,7 @@ test('doctor session transcription and AI summary extraction flow', async ({ pag
 
   // Wait for the prepare session state to end
   console.log("Waiting for session page to load...")
-  await page.waitForSelector('#start-session-btn', { timeout: 10000 })
+  await page.waitForSelector('#start-session-btn', { timeout: 20000 })
   console.log("Session page loaded successfully.")
 
   // Check if "Load Demo Transcript" button exists and click it
@@ -46,17 +49,17 @@ test('doctor session transcription and AI summary extraction flow', async ({ pag
   console.log("Clicking 'Extract AI Insights' button...")
   await page.click('#manual-extract-btn')
 
-  // Wait for the AI extraction to complete (this might take up to 90 seconds due to Llama 3.3 model latency)
+  // Wait for the AI extraction to complete (this might take up to 120 seconds due to Llama 3.3 model latency)
   console.log("Waiting for AI extraction to complete (polling status)...")
   
   // Wait until the "Review Required" or "Clinical Summary" text is visible
-  await page.waitForSelector('text=Clinical Summary', { timeout: 120000 })
+  await page.waitForSelector('text=Clinical Summary', { timeout: 180000 })
   console.log("AI Extraction succeeded! Clinical Summary is visible.")
 
-  // Let's verify other components like Diagnosis, Symptoms, and Prescriptions
-  await expect(page.locator('text=Symptoms & Issues')).toBeVisible()
-  await expect(page.locator('text=Diagnosis')).toBeVisible()
-  await expect(page.locator('text=Prescription')).toBeVisible()
+  // Let's verify other components like Diagnosis, Symptoms, and Prescriptions using specific locators
+  await expect(page.locator('text=Symptoms & Issues').first()).toBeVisible()
+  await expect(page.locator('text=Diagnosis').first()).toBeVisible()
+  await expect(page.locator('text=Prescription').first()).toBeVisible()
   
   console.log("Test finished successfully with all elements verified!");
 })

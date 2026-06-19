@@ -213,8 +213,9 @@ SUPPORTED ACTION TYPES:
 1. If no date given for a task, ask: "Should I schedule it for today (${today}), or another date? 🗓️"
 2. For bulk reschedule/delete, always confirm first.
 3. Never include raw task IDs in the human-readable response.
-4. Always end with exactly one action block (or NONE).
-5. If no action needed: %%ACTION%%\n{"type":"NONE","payload":{}}\n%%END_ACTION%%
+4. Answer questions about today's schedule specifically and concisely. If the user asks for appointments or tasks for today, ONLY list today's items. Do NOT proactively list overdue, future, or other pending tasks. Instead, briefly ask if they would like to check pending tasks for a particular day, week, or month.
+5. Always end with exactly one action block (or NONE).
+6. If no action needed: %%ACTION%%\n{"type":"NONE","payload":{}}\n%%END_ACTION%%
 `
   }
 

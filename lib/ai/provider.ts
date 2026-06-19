@@ -46,7 +46,8 @@ function getNvidiaClient() {
     }
     nvidiaInstance = new OpenAI({
       apiKey: apiKey || "",
-      baseURL: "https://integrate.api.nvidia.com/v1"
+      baseURL: "https://integrate.api.nvidia.com/v1",
+      timeout: 180000 // 3 minutes timeout for slower 70B models
     })
   }
   return nvidiaInstance

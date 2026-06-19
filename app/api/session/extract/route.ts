@@ -7,6 +7,8 @@
  */
 
 import { NextResponse } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 import { generateJSON } from '@/lib/ai/provider'
 import {
   CLINICAL_EXTRACTION_SYSTEM_PROMPT,
@@ -58,9 +60,16 @@ export async function POST(req: Request) {
         `Here is the clinical session transcript. Extract all medical data:\n\n${transcript}`,
         CLINICAL_EXTRACTION_SYSTEM_PROMPT
       )
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.error("AI extraction failed:", aiError)
-      throw new Error("Failed to extract data from the transcript. Please try again or enter details manually.")
+      // Log to a file for easy debugging
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), 'extract-error.log'),
+          `[${new Date().toISOString()}] Error: ${aiError?.message}\nStack: ${aiError?.stack}\n\n`
+        )
+      } catch {}
+      throw new Error(`Failed to extract data from the transcript: ${aiError?.message || aiError}`)
     }
 
     // Step 2: Post-process — validate and normalize prescriptions
